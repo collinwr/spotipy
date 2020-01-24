@@ -68,8 +68,27 @@ class OAuthCacheTest(unittest.TestCase):
     @patch.multiple(SpotifyOAuth,
                     is_token_expired=DEFAULT, refresh_access_token=DEFAULT)
     @patch('spotipy.oauth2.open', create=True)
-    def test_expired_token_refreshes(self, opener,
-                                     is_token_expired, refresh_access_token):
+    def test_refresh_access_token_if_expired(self, opener,
+                                             is_token_expired,
+                                             refresh_access_token):
+        scope = "playlist-modify-private"
+        path = ".cache-username"
+        token = _make_fake_token(None, None, scope)
+
+        opener.return_value = _token_file(json.dumps(token,
+                                                     ensure_ascii=False))
+        is_token_expired.return_value = True
+
+        _make_oauth(scope, path)
+
+        opener.assert_called_with(path)
+        self.assertEqual(refresh_access_token.call_count, 1)
+
+    @patch.multiple(SpotifyOAuth,
+                    is_token_expired=DEFAULT, refresh_access_token=DEFAULT)
+    @patch('spotipy.oauth2.open', create=True)
+    def test_refresh_access_token(self, opener,
+                                  is_token_expired, refresh_access_token):
         scope = "playlist-modify-private"
         path = ".cache-username"
         expired_tok = _make_fake_token(0, None, scope)
